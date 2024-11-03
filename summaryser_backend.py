@@ -4,9 +4,35 @@ import os
 import whisper
 import random
 import string
+import ollama
+from moviepy.editor import VideoFileClip
 
 final_link = ''
 
+desired_model = 'llama3.2:3b'
+
+def to_llama(question_text):
+    response = ''
+
+    start_char = 0
+    end_char = 2000
+
+    while(start_char <= len(question_text)):
+        response += ollama.chat(model=desired_model, messages=[
+            {
+                'role': 'system',
+                'content': 'Создай конспект материала, который отправит тебе пользовател. Не пиши в ответе ничего, кроме конспекта',
+            },
+            {
+                'role': 'user',
+                'content': question_text[start_char : end_char],
+            },
+        ])['message']['content'] + ' '
+
+        start_char += 1990
+        end_char += 1990
+
+    return response 
 
 def get_href(public_link):
     base_url = 'https://cloud-api.yandex.net/v1/disk/public/resources/download?'
@@ -38,9 +64,10 @@ def download_files(url, userid):
     return final_link
 
 def extract_audio(file_path, userid):
-    clip = VideoFileClip(video_file)
-    clip.audio.write_audiofile(f'extract/{userid}.mp3')
-    return f'audio/{userid}.mp3'
+    const_path = f'audio/{userid}.mp3'
+    clip = VideoFileClip(file_path)
+    clip.audio.write_audiofile(const_path)
+    return const_path
 
 def to_whisper(file_path):
     whisper_model = whisper.load_model("small")
@@ -48,16 +75,35 @@ def to_whisper(file_path):
     transcribed_text = whisper_model.transcribe(file_path)
     return transcribed_text['text']
 
+def show_summary(userid):
+    print(f'answers/{userid}.txt :\n\n')
+    with open(f'answers/{userid}.txt', 'r') as answer:
+        print(answer.read())
+
 
 def serve(ya_disk_link):
-    username = ''
+    userid = ''
     for i in range(0, 10):
-        username += random.choice(string.ascii_letters)
-    os.makedirs('audio')
-    os.makedirs('text')
+        userid += random.choice(string.ascii_letters)
+
+    if not os.path.exists('audio'):
+        os.mkdir('audio')
+    if not os.path.exists('text'):
+        os.mkdir('text')
+    if not os.path.exists('answers'):
+        os.mkdir('answers')
+
     file_path = download_files(get_href(ya_disk_link), userid)
     audio_file_path = extract_audio(file_path, userid)
-    with open(f'text/{uerid}.txt', 'w') as text_file:
+    with open(f'text/{userid}.txt', 'w') as text_file:
         text_file.write(to_whisper(audio_file_path))
 
-#serve('https://disk.yandex.ru/i/ASpAgpoBjGggbw')
+    with open(f'text/{userid}.txt', 'r') as text_file:
+        with open(f'answers/{userid}.txt', 'w') as answer:
+            answer.write(to_llama(text_file.read()))
+
+    show_summary(userid)
+    
+
+serve('https://disk.yandex.ru/i/qRtKQ_b38GPuEw')
+#https://disk.yandex.ru/i/qRtKQ_b38GPuEw
