@@ -1,4 +1,5 @@
 import requests
+import sys
 from urllib.parse import urlencode
 import os
 import whisper
@@ -21,7 +22,7 @@ def to_llama(question_text):
         response += ollama.chat(model=desired_model, messages=[
             {
                 'role': 'system',
-                'content': 'Создай конспект материала, который отправит тебе пользовател. Не пиши в ответе ничего, кроме конспекта',
+                'content': 'Создай сжатую версию материала, который отправит тебе пользователь. Не пиши в ответе ничего, кроме пересказа',
             },
             {
                 'role': 'user',
@@ -105,5 +106,4 @@ def serve(ya_disk_link):
     show_summary(userid)
     
 
-serve('https://disk.yandex.ru/i/qRtKQ_b38GPuEw')
-#https://disk.yandex.ru/i/qRtKQ_b38GPuEw
+serve(sys.argv[1])
