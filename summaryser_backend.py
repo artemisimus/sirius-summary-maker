@@ -22,7 +22,7 @@ def to_llama(question_text):
         response += ollama.chat(model=desired_model, messages=[
             {
                 'role': 'system',
-                'content': 'Создай сжатую версию материала, который отправит тебе пользователь. Не пиши в ответе ничего, кроме пересказа',
+                'content': 'Создай конспект материала, который отправит тебе пользователь. Не пиши в ответе ничего, кроме конспекта',
             },
             {
                 'role': 'user',
@@ -65,7 +65,7 @@ def download_files(url, userid):
     return final_link
 
 def extract_audio(file_path, userid):
-    const_path = f'audio/{userid}.mp3'
+    const_path = os.path.join('audio', f'{userid}.mp3')
     clip = VideoFileClip(file_path)
     clip.audio.write_audiofile(const_path)
     return const_path
@@ -77,8 +77,9 @@ def to_whisper(file_path):
     return transcribed_text['text']
 
 def show_summary(userid):
-    print(f'answers/{userid}.txt :\n\n')
-    with open(f'answers/{userid}.txt', 'r') as answer:
+    path = os.path.join('answers', f'{userid}.txt')
+    print(path, ':\n\n')
+    with open(path, 'r') as answer:
         print(answer.read())
 
 
@@ -96,11 +97,13 @@ def serve(ya_disk_link):
 
     file_path = download_files(get_href(ya_disk_link), userid)
     audio_file_path = extract_audio(file_path, userid)
-    with open(f'text/{userid}.txt', 'w') as text_file:
+
+    text_path = os.path.join('text', f'{userid}.txt')
+    with open(text_path, 'w') as text_file:
         text_file.write(to_whisper(audio_file_path))
 
-    with open(f'text/{userid}.txt', 'r') as text_file:
-        with open(f'answers/{userid}.txt', 'w') as answer:
+    with open(text_path, 'r') as text_file:
+        with open(os.path.join('answers', f'{userid}.txt'), 'w') as answer:
             answer.write(to_llama(text_file.read()))
 
     show_summary(userid)
